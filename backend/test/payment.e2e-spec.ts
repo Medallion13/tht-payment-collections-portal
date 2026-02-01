@@ -32,7 +32,7 @@ describe('Payment flow(E2E)', () => {
     it('should return COP amount for valid USD amount', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/payment/quote')
-        .send({ usdAmount: 300 })
+        .send({ amount: 300 })
         .expect(200);
 
       // Verify structure
@@ -41,7 +41,7 @@ describe('Payment flow(E2E)', () => {
       expect(response.body).toHaveProperty('exchangeRate');
 
       //verify values have sense
-      expect(response.body.copAmount).toBeGreaterThan(0);
+      expect(response.body.finalAmount).toBeGreaterThan(0);
       expect(response.body.exchangeRate).toBeGreaterThan(0);
       expect(typeof response.body.quoteId).toBe('string');
     });

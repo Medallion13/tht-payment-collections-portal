@@ -29,7 +29,7 @@ export type QuoteResponse = SupraQuoteResponse | ErrorResponse;
 // Internal interface for transformations
 export interface Quote {
   quoteId: string;
-  initalCurrency: string;
+  initialCurrency: string;
   finalAmount: number; // factor 100
   finalCurrency: string;
   exchangeRate: number;

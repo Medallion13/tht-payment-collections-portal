@@ -1,6 +1,6 @@
 export class QuoteResponseDto {
   quoteId: string;
-  initalAmount: number;
+  initialAmount: number;
   finalAmount: number;
   exchangeRate: number;
   expiresAt: string;
