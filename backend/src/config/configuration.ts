@@ -6,3 +6,5 @@ export default () => ({
     secret: process.env.SUPRA_SECRET,
   },
 });
+
+// TODO: Check zoi to ensure the variables exists
