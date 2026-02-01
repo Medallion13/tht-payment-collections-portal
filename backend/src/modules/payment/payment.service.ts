@@ -21,8 +21,10 @@ export class PaymentService {
         quoteId: supraQuote.quoteId,
         initialAmount: dto.amount,
         finalAmount: supraQuote.finalAmount,
+        transactionCost: supraQuote.transactionCost,
         exchangeRate: supraQuote.exchangeRate,
         expiresAt: supraQuote.expiresAt,
+        totalCost: supraQuote.transactionCost + supraQuote.finalAmount,
       };
 
       return result;
@@ -34,7 +36,13 @@ export class PaymentService {
       this.logger.log({
         operation: 'getQuote',
         input: { initialAmount: dto.amount },
-        output: result ? { quoteId: result.quoteId, initialAmout: result.initialAmount } : null,
+        output: result
+          ? {
+              quoteId: result.quoteId,
+              initialAmout: result.initialAmount,
+              finalAmount: result.finalAmount,
+            }
+          : null,
         duration: Date.now() - startTime,
         status: error ? 'error' : 'success',
         error: error ? { message: error.message } : null,
