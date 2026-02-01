@@ -9,6 +9,9 @@ lint:
 test:
 	pnpm run test
 
+test-e2e:
+	pnpm run test:e2e
+
 test-cov:
 	pnpm run test:cov
 
