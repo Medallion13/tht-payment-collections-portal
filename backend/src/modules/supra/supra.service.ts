@@ -9,8 +9,6 @@ import { SupraMapper } from './supra.mapper';
 @Injectable()
 export class SupraService {
   private readonly logger = new Logger(SupraService.name);
-  private accessToken: string | null = null;
-  private tokenExpiresAt: string | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -106,7 +104,7 @@ export class SupraService {
       throw e;
     } finally {
       this.logger.log({
-        operation: 'getQuote',
+        operation: 'getSupraQuote',
         input: { amount },
         output: result ? { quoteId: result.quoteId, finalAmount: result.finalAmount } : null,
         duration_ms: Date.now() - startTime,

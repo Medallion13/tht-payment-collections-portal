@@ -5,11 +5,11 @@ export class SupraMapper {
   static toQuote(data: SupraQuoteResponse): Quote {
     return {
       quoteId: data.id,
-      initalCurrency: data.initialCurrency,
+      initialCurrency: data.initialCurrency,
       finalAmount: data.finalAmount,
       finalCurrency: data.finalCurrency,
       exchangeRate: data.exchangeRate,
-      expiresAt: String(addSeconds(Date.now(), 45)),
+      expiresAt: addSeconds(new Date(), 45).toISOString(),
     };
   }
 }
