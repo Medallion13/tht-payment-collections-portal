@@ -31,6 +31,7 @@ export interface Quote {
   quoteId: string;
   initialCurrency: string;
   finalAmount: number; // factor 100
+  transactionCost: number; //factor 100
   finalCurrency: string;
   exchangeRate: number;
   expiresAt: string; // 45 seconds from the quote response

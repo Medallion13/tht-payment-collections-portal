@@ -34,10 +34,16 @@ export class SupraService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post<AuthResponse>(`${this.apiUrl}/v1/auth/token`, {
-          clientId: this.clientId,
-          clientSecret: this.secret,
-        }),
+        this.httpService.post<AuthResponse>(
+          `${this.apiUrl}/v1/auth/token`,
+          {
+            clientId: this.clientId,
+            clientSecret: this.secret,
+          },
+          {
+            headers: { 'X-API-TYPE': 'public' },
+          },
+        ),
       );
 
       const data = response.data;
@@ -83,7 +89,7 @@ export class SupraService {
             customExpirationTime: 60,
           },
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, 'X-API-TYPE': 'public' },
           },
         ),
       );

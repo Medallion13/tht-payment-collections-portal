@@ -7,6 +7,7 @@ export class SupraMapper {
       quoteId: data.id,
       initialCurrency: data.initialCurrency,
       finalAmount: data.finalAmount,
+      transactionCost: data.transactionCost,
       finalCurrency: data.finalCurrency,
       exchangeRate: data.exchangeRate,
       expiresAt: addSeconds(new Date(), 45).toISOString(),
