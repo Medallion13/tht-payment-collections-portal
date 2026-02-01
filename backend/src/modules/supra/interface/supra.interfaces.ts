@@ -29,7 +29,9 @@ export type QuoteResponse = SupraQuoteResponse | ErrorResponse;
 // Internal interface for transformations
 export interface Quote {
   quoteId: string;
+  initalCurrency: string;
   finalAmount: number; // factor 100
+  finalCurrency: string;
   exchangeRate: number;
-  expiresAt: Date; // 45 seconds from the quote response
+  expiresAt: string; // 45 seconds from the quote response
 }
