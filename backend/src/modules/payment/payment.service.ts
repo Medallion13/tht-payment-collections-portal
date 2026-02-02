@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupraService } from '../supra/supra.service';
+import { BalancesResponseDTO } from './dto/balances-response.dto';
 import { CreatePaymentResponseDto } from './dto/create-payment-response.dto';
 import { CreatePaymentRequestDto } from './dto/create-payment.dto';
 import { PaymentStatusResponseDto } from './dto/payment-status-response.dto';
@@ -197,6 +198,40 @@ export class PaymentService {
           ? {
               status: result.status,
               amount: result.amount,
+            }
+          : null,
+        duration: Date.now() - startTime,
+        status: error ? 'error' : 'success',
+        error: error ? { message: error.message } : null,
+      });
+    }
+  }
+
+  async getBalances(): Promise<BalancesResponseDTO> {
+    const startTime = Date.now();
+    let error: Error | null = null;
+    let result: BalancesResponseDTO | null = null;
+
+    try {
+      const balances = await this.supraService.getBalance();
+
+      result = {
+        usd: balances.usd,
+        cop: balances.cop,
+      };
+
+      return result;
+    } catch (e) {
+      error = e instanceof Error ? e : new Error(String(e));
+
+      throw error;
+    } finally {
+      this.logger.log({
+        operation: 'getQuote',
+        output: result
+          ? {
+              usd: result.usd,
+              cop: result.cop,
             }
           : null,
         duration: Date.now() - startTime,
