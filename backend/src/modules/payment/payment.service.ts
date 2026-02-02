@@ -48,6 +48,7 @@ export class PaymentService {
       return result;
     } finally {
       this.logger.log('validate_quote', {
+        operation: 'PaymentService',
         input: { quoteId },
         output: result
           ? {
@@ -145,6 +146,7 @@ export class PaymentService {
       throw error;
     } finally {
       this.logger.log('create_payment', {
+        operation: 'createPayment',
         input: {
           quoteId: dto.quoteId,
           email: dto.email,

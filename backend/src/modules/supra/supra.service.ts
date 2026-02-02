@@ -172,6 +172,7 @@ export class SupraService {
       throw e;
     } finally {
       this.logger.log('get_quote_by_id', {
+        operation: 'getQuoteById',
         input: { quoteId },
         output: result
           ? {
@@ -247,6 +248,7 @@ export class SupraService {
     } catch (e) {
       if (e instanceof AxiosError && e.response?.data) {
         const serverError = e.response.data as ErrorResponse;
+        console.error(e);
         error = new Error(`Supra API Error: ${serverError.message || e.message}`);
       } else {
         error = e instanceof Error ? e : new Error(String(e));
@@ -254,6 +256,7 @@ export class SupraService {
       throw error;
     } finally {
       this.logger.log('create_payment', {
+        operation: `createPayment`,
         input: {
           quoteId,
           email: userData.email,
