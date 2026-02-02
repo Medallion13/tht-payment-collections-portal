@@ -36,4 +36,14 @@ export const api = {
     const response = await client.post("/api/payment/process", data);
     return response.data;
   },
+
+  getPaymentStatus: async (paymentId: string) => {
+    const response = await client.get(`/api/payment/status/${paymentId}`);
+    return response.data;
+  },
+
+  getBalances: async () => {
+    const response = await client.get("/api/payment/balances");
+    return response.data;
+  },
 };
