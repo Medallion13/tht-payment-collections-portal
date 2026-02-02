@@ -25,6 +25,13 @@ export default function QuotePage() {
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
 
+  // First quote with render
+  useEffect(() => {
+    if (!isInvalidAmount) {
+      handleGetQuote();
+    }
+  }, []);
+
   // Timer
   useEffect(() => {
     if (!quote) return;
