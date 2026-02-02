@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosError } from 'axios';
+import { randomUUID } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import {
   AuthResponse,
@@ -9,7 +10,6 @@ import {
   Payment,
   Quote,
   QuoteResponse,
-  QuoteValidation,
   SupraPaymentCreateRequest,
   SupraPaymentCreateResponse,
   SupraQuoteByIdResponse,
@@ -74,42 +74,6 @@ export class SupraService {
     } finally {
       this.logger.log({
         operation: 'getToken',
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
-    }
-  }
-
-  private async validateQuote(quoteId: string): Promise<QuoteValidation> {
-    const startTime = Date.now();
-    let error: Error | null = null;
-
-    try {
-      const quote = await this.getQuoteById(quoteId);
-
-      const now = new Date();
-      const expiresAt = new Date(quote.expiresAt);
-      const isExpired = now > expiresAt;
-
-      const totalCost = quote.finalAmount + quote.transactionCost;
-
-      return {
-        isValid: true,
-        isExpired,
-        totalCost,
-      };
-    } catch (e) {
-      error = e instanceof Error ? e : new Error(String(e));
-      return {
-        isValid: false,
-        isExpired: false,
-        totalCost: 0,
-        errorMessage: e instanceof Error ? e.message : String(e),
-      };
-    } finally {
-      this.logger.log({
-        operation: 'validateQuote',
         duration_ms: Date.now() - startTime,
         status: error ? 'error' : 'success',
         error: error ? { message: error.message } : null,
@@ -226,7 +190,17 @@ export class SupraService {
   /**
    * Create the payment
    */
-  async createPayment(paymentData: SupraPaymentCreateRequest): Promise<Payment> {
+  async createPayment(
+    quoteId: string,
+    totalCost: number,
+    userData: {
+      fullName: string;
+      documentType: string;
+      document: string;
+      email: string;
+      cellPhone: string;
+    },
+  ): Promise<Payment> {
     const startTime = Date.now();
     let result: Payment | null = null;
     let error: Error | null = null;
@@ -234,10 +208,25 @@ export class SupraService {
     try {
       const token = await this.getToken();
 
+      // Construct Supra request
+      const paymentRequest: SupraPaymentCreateRequest = {
+        currency: 'COP',
+        amount: totalCost,
+        referenceId: randomUUID(),
+        documentType: userData.documentType,
+        email: userData.email,
+        cellPhone: userData.cellPhone,
+        document: userData.document,
+        fullName: userData.fullName,
+        description: 'Collection Payment',
+        redirectUrl: 'http://localhost:5173/confirmation',
+        quoteId,
+      };
+
       const response = await firstValueFrom(
         this.httpService.post<SupraPaymentCreateResponse>(
           `${this.apiUrl}/v1/payin/payment`,
-          paymentData, // Send the request payload
+          paymentRequest,
           {
             headers: {
               'X-API-TYPE': 'public',
@@ -266,9 +255,9 @@ export class SupraService {
     } finally {
       this.logger.log('create_payment', {
         input: {
-          quoteId: paymentData.quoteId,
-          email: paymentData.email,
-          amount: paymentData.amount,
+          quoteId,
+          email: userData.email,
+          amount: totalCost,
         },
         output: result
           ? {

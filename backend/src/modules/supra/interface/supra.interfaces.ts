@@ -106,17 +106,6 @@ export interface Quote {
 }
 
 /**
- * Quote validation result
- */
-export interface QuoteValidation {
-  isValid: boolean;
-  isExpired: boolean;
-  totalCost: number;
-  quote?: SupraQuoteByIdResponse;
-  errorMessage?: string;
-}
-
-/**
  * Internal interface for payment creation
  */
 export interface Payment {
