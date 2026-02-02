@@ -95,7 +95,15 @@ export default function QuotePage() {
       const data = await api.getQuote(initialAmount);
       setQuote(data);
     } catch (e) {
-      setError("error getting quote. Try Again.");
+      const backendMessage = e.response?.data?.message;
+
+      if (Array.isArray(backendMessage)) {
+        setError(backendMessage[0]);
+      } else if (backendMessage) {
+        setError(backendMessage);
+      } else {
+        setError("Error getting quote. Try again.");
+      }
       console.error(e);
     } finally {
       setLoadingQuote(false);
@@ -334,7 +342,7 @@ export default function QuotePage() {
       </div>
 
       <div className="footer">
-        <a href="/">← Back to Home</a>
+        <Link to="/">← Back to Home</Link>
       </div>
     </div>
   );
