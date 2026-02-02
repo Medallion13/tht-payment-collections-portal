@@ -6,11 +6,13 @@ import { randomUUID } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import {
   AuthResponse,
+  Balances,
   ErrorResponse,
   Payment,
   PaymentStatus,
   Quote,
   QuoteResponse,
+  SupraBalanceResponse,
   SupraPaymentCreateRequest,
   SupraPaymentCreateResponse,
   SupraPaymentStatusResponse,
@@ -323,6 +325,47 @@ export class SupraService {
               amount: result.amount,
             }
           : null,
+        duration_ms: Date.now() - startTime,
+        status: error ? 'error' : 'success',
+        error: error ? { message: error.message } : null,
+      });
+    }
+  }
+
+  async getBalance(): Promise<Balances> {
+    const startTime = Date.now();
+    let error: Error | null = null;
+    let result: Balances | null = null;
+
+    try {
+      const token = await this.getToken();
+
+      const response = await firstValueFrom(
+        this.httpService.get<SupraBalanceResponse>(`${this.apiUrl}/v1/payout/user/balances`, {
+          headers: { Authorization: `Bearer ${token}`, 'X-API-TYPE': 'public' },
+        }),
+      );
+
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        result = SupraMapper.toBalances(data);
+        return result;
+      }
+
+      throw new Error(`Error getting balances: ${JSON.stringify(data)}`);
+    } catch (e) {
+      if (e instanceof AxiosError && e.response?.data) {
+        const serverError = e.response.data as ErrorResponse;
+        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
+      } else {
+        error = e instanceof Error ? e : new Error(String(e));
+      }
+      throw e;
+    } finally {
+      this.logger.log({
+        operation: 'getPaymentStatus',
+
         duration_ms: Date.now() - startTime,
         status: error ? 'error' : 'success',
         error: error ? { message: error.message } : null,
