@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { CreatePaymentResponseDto } from '../src/modules/payment/dto/create-payment-response.dto';
 import { QuoteResponseDto } from '../src/modules/payment/dto/quote-response.dto';
 
 describe('Payment flow(E2E)', () => {
@@ -132,6 +133,59 @@ describe('Payment flow(E2E)', () => {
 
       // Empty request
       await request(app.getHttpServer()).post('/api/payment/process').send({}).expect(400);
+    });
+  });
+
+  describe('Get /api/payment/status/:id', () => {
+    let existingPaymentId: string;
+
+    beforeAll(async () => {
+      // Setup: crear quote + payment UNA vez para este bloque
+      const quoteRes = await request(app.getHttpServer())
+        .post('/api/payment/quote')
+        .send({ amount: 10000 });
+
+      const { quoteId } = quoteRes.body as QuoteResponseDto;
+
+      const paymentRes = await request(app.getHttpServer()).post('/api/payment/process').send({
+        quoteId,
+        fullName: 'Status Test User',
+        documentType: 'CC',
+        document: '888888888',
+        email: 'status-test@example.com',
+        cellPhone: '+573001234567',
+      });
+
+      existingPaymentId = (paymentRes.body as CreatePaymentResponseDto).paymentId;
+    });
+
+    it('should get payment status by valid ID', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/payment/status/${existingPaymentId}`)
+        .expect(200);
+
+      // Estructura mínima para ConfirmationPage
+      expect(response.body).toHaveProperty('paymentId', existingPaymentId);
+      expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('amount');
+      expect(response.body).toHaveProperty('currency');
+    });
+
+    it('should return 404 for non-existent payment ID', async () => {
+      await request(app.getHttpServer())
+        .get('/api/payment/status/00000000-0000-0000-0000-000000000000')
+        .expect(404);
+    });
+  });
+
+  describe('GET /api/payment/balances', () => {
+    it('should return USD and COP balances', async () => {
+      const response = await request(app.getHttpServer()).get('/api/payment/balances').expect(200);
+
+      expect(response.body).toHaveProperty('usd');
+      expect(response.body).toHaveProperty('cop');
+      expect(typeof response.body.usd).toBe('number');
+      expect(typeof response.body.cop).toBe('number');
     });
   });
 });
