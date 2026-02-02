@@ -77,7 +77,7 @@ export class SupraService {
     let result: Quote | null = null;
     try {
       const token = await this.getToken();
-      const amountForApi = Math.round(amount * 100); // factor 100
+      const amountForApi = amount;
 
       const response = await firstValueFrom(
         this.httpService.post<QuoteResponse>(
