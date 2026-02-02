@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState, type SyntheticEvent } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../services/api";
 import "../styles/QuotePage.css";
 
 // TODO check de herramientas que permiten compartir los modelos en monorepos para mantener consistencia de datos
+
+const countryCodes = [
+  { code: "+57", label: "🇨🇴 +57" },
+  { code: "+1", label: "🇺🇸 +1" },
+  { code: "+34", label: "🇪🇸 +34" },
+  { code: "+52", label: "🇲🇽 +52" },
+];
 interface QuoteResponse {
   quoteId: string;
   initialAmount: number;
@@ -24,7 +31,6 @@ interface FormData {
 
 export default function QuotePage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   //get the amount form the URL o pass a default value for testing reasons
   const initialAmount = parseFloat(searchParams.get("amount") || "0");
@@ -33,6 +39,9 @@ export default function QuotePage() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
+
+  //cellphone state
+  const [phonePrefix, setPhonePrefix] = useState("+57");
 
   // Form State
   const [formData, setFormData] = useState<FormData>({
@@ -93,7 +102,7 @@ export default function QuotePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
     if (!quote) {
@@ -133,6 +142,16 @@ export default function QuotePage() {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     });
+  };
+
+  const handlePhoneChange = (localNumber: string) => {
+    setFormData({ ...formData, cellPhone: `${phonePrefix}${localNumber}` });
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setPhonePrefix(newPrefix);
+    const currentLocal = formData.cellPhone.replace(phonePrefix, "");
+    setFormData({ ...formData, cellPhone: `${newPrefix}${currentLocal}` });
   };
 
   if (isInvalidAmount) {
@@ -212,18 +231,33 @@ export default function QuotePage() {
                 placeholder="email@example.com"
               />
             </div>
-
             <div className="form-group">
               <label>Cell Phone *</label>
-              <input
-                type="tel"
-                value={formData.cellPhone}
-                onChange={(e) =>
-                  setFormData({ ...formData, cellPhone: e.target.value })
-                }
-                required
-                placeholder="+57..."
-              />
+
+              {/* Usamos un div con flex para ponerlos lado a lado */}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <select
+                  style={{ width: "110px" }}
+                  value={phonePrefix} // Variable de estado: "+57", "+1", etc.
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                >
+                  {countryCodes.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="tel"
+                  style={{ flex: 1 }} // Ocupa el espacio restante
+                  value={formData.cellPhone.replace(phonePrefix, "")}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  required
+                  placeholder="3001234567"
+                  maxLength={10}
+                />
+              </div>
             </div>
 
             <button
