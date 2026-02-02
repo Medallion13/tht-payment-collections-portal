@@ -3,7 +3,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
-import { AuthResponse, ErrorResponse, Quote, QuoteResponse } from './interface/supra.interfaces';
+import {
+  AuthResponse,
+  ErrorResponse,
+  Quote,
+  QuoteResponse,
+  SupraQuoteByIdResponse,
+} from './interface/supra.interfaces';
 import { SupraMapper } from './supra.mapper';
 
 @Injectable()
@@ -115,6 +121,61 @@ export class SupraService {
         operation: 'getSupraQuote',
         input: { amount },
         output: result ? { quoteId: result.quoteId, finalAmount: result.finalAmount } : null,
+        duration_ms: Date.now() - startTime,
+        status: error ? 'error' : 'success',
+        error: error ? { message: error.message } : null,
+      });
+    }
+  }
+
+  /**
+   * Get the Quote by ID for validation before creating the payment
+   */
+
+  async getQouteById(quoteId: string): Promise<Quote> {
+    const startTime = Date.now();
+    let result: Quote | null = null;
+    let error: Error | null = null;
+
+    try {
+      const token = await this.getToken();
+
+      const response = await firstValueFrom(
+        this.httpService.get<SupraQuoteByIdResponse>(
+          `${this.apiUrl}/v1/exchange/quote/${quoteId}`,
+          {
+            headers: {
+              'X-API-TYPE': 'public',
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        ),
+      );
+      const data = response.data;
+      if ('id' in data) {
+        result = SupraMapper.toQuoteFromById(data);
+        return result;
+      }
+
+      throw new Error(`Error getting the create quote: ${JSON.stringify(data)}`);
+    } catch (e) {
+      if (e instanceof AxiosError && e.response?.data) {
+        const serverError = e.response.data as ErrorResponse;
+        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
+      } else {
+        error = e instanceof Error ? e : new Error(String(e));
+      }
+      throw e;
+    } finally {
+      this.logger.log('get_quote_by_id', {
+        input: { quoteId },
+        output: result
+          ? {
+              exists: true,
+              finalAmount: result.finalAmount,
+              expiresAt: result.expiresAt,
+            }
+          : null,
         duration_ms: Date.now() - startTime,
         status: error ? 'error' : 'success',
         error: error ? { message: error.message } : null,

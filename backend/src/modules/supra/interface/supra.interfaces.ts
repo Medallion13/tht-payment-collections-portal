@@ -55,6 +55,27 @@ export interface SupraPaymentCreateResponse {
 export type PaymentCreateResponse = SupraPaymentCreateResponse | ErrorResponse;
 
 /**
+ * Supra quote by ID response
+ */
+export interface SupraQuoteByIdResponse {
+  id: string;
+  exchangeConfirmationToken: string;
+  createdAt: string;
+  expiresAt: string;
+  initialAmount: string;
+  initialCurrency: string;
+  finalAmount: string;
+  finalCurrency: string;
+  exchangeRate: number;
+  inverseExchangeRate: number;
+  operationTypeId: string | null;
+  tokenType: string;
+  exchangeRates: Record<string, number>;
+}
+
+export type QuoteByIdResponse = SupraQuoteByIdResponse | ErrorResponse;
+
+/**
  * Internal interface for transformations
  */
 export interface Quote {
@@ -76,4 +97,15 @@ export interface Payment {
   paymentLink: string;
   status: string;
   quoteId: string;
+}
+
+/**
+ * Quote validation result
+ */
+export interface QuoteValidation {
+  isValid: boolean;
+  isExpired: boolean;
+  totalCost: number;
+  quote?: SupraQuoteByIdResponse;
+  errorMessage?: string;
 }
