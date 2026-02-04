@@ -8,13 +8,11 @@ import {
   PaymentStatusResponse,
   QuoteResponse,
 } from '@tht/shared';
-import axios, { AxiosError } from 'axios';
 import { randomUUID } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 
 import {
   AuthSuccess,
-  ErrorResponse,
   SupraBalanceResponse,
   SupraPaymentCreateRequest,
   SupraPaymentCreateResponse,
@@ -22,6 +20,7 @@ import {
   SupraQuoteByIdResponse,
   SupraQuoteResponse,
 } from './interface/supra.interfaces';
+import { handleSupraError } from './supra.errors';
 import { SupraMapper } from './supra.mapper';
 
 @Injectable()
@@ -66,13 +65,7 @@ export class SupraService {
 
       return response.data.token;
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        const serverError = e.response.data as ErrorResponse;
-        error = new Error(`Supra Auth Error: ${serverError.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
-
+      error = handleSupraError(e);
       throw error;
     } finally {
       this.logger.log({
@@ -115,13 +108,7 @@ export class SupraService {
 
       return result;
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        const serverError = e.response.data as ErrorResponse;
-        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
-
+      error = handleSupraError(e);
       throw error;
     } finally {
       this.logger.log({
@@ -160,12 +147,7 @@ export class SupraService {
       result = SupraMapper.toQuoteFromById(response.data);
       return result;
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        const serverError = e.response.data as ErrorResponse;
-        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
+      error = handleSupraError(e);
 
       throw error;
     } finally {
@@ -232,13 +214,7 @@ export class SupraService {
 
       return result;
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        const serverError = e.response.data as ErrorResponse;
-        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
-
+      error = handleSupraError(e);
       throw error;
     } finally {
       this.logger.log('create_payment', {
@@ -285,19 +261,8 @@ export class SupraService {
 
       return result;
     } catch (e) {
-      if (e instanceof AxiosError && e.response?.data) {
-        // manage the 500 errors when the id is not found
-        if (e.response?.status === 500) {
-          error = new Error('Payment not found');
-          error.name = 'NotFoundError';
-          throw error;
-        }
-        const serverError = e.response?.data as ErrorResponse;
-        error = new Error(`Supra API Error: ${serverError?.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
-      throw e;
+      error = handleSupraError(e, { notFoundOn500: true });
+      throw error;
     } finally {
       this.logger.log({
         operation: 'getPaymentStatus',
@@ -338,12 +303,7 @@ export class SupraService {
 
       throw new Error(`Error getting balances: ${JSON.stringify(data)}`);
     } catch (e) {
-      if (e instanceof AxiosError && e.response?.data) {
-        const serverError = e.response.data as ErrorResponse;
-        error = new Error(`Supra API Error: ${serverError.message || e.message}`);
-      } else {
-        error = e instanceof Error ? e : new Error(String(e));
-      }
+      error = handleSupraError(e);
       throw e;
     } finally {
       this.logger.log({
