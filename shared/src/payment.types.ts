@@ -15,7 +15,7 @@ export interface CreatePaymentResponse {
   paymentId: string;
   /** Redirect URL */
   paymentLink: string;
-  status: PaymentStatus | string;
+  status: PaymentStatus;
   quoteId: string;
 }
 

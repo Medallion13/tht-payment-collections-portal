@@ -1,56 +1,71 @@
+import {
+  AppBalance,
+  CreatePaymentResponse,
+  PaymentStatusResponse,
+  QuoteResponse,
+  type PaymentStatus,
+} from '@tht/shared';
+
 import { addSeconds } from 'date-fns';
 import {
-  Balances,
-  Payment,
-  PaymentStatus,
-  Quote,
   SupraBalanceResponse,
   SupraPaymentCreateResponse,
   SupraPaymentStatusResponse,
   SupraQuoteByIdResponse,
   SupraQuoteResponse,
 } from './interface/supra.interfaces';
+
 import { TRANSACTION_COST_USD } from './supra.constants';
 
 export class SupraMapper {
-  static toQuote(data: SupraQuoteResponse): Quote {
+  static toQuote(data: SupraQuoteResponse): QuoteResponse {
+    const txCost = TRANSACTION_COST_USD * data.exchangeRate;
+    const total = data.initialAmount + txCost;
     return {
       quoteId: data.id,
-      initialCurrency: data.initialCurrency,
+      initialAmount: data.initialAmount,
       finalAmount: data.finalAmount,
       transactionCost: TRANSACTION_COST_USD * data.exchangeRate,
-      finalCurrency: data.finalCurrency,
       exchangeRate: data.exchangeRate,
       expiresAt: addSeconds(new Date(), 45).toISOString(),
+      totalCost: total,
     };
   }
 
-  static toQuoteFromById(data: SupraQuoteByIdResponse): Quote {
+  static toQuoteFromById(data: SupraQuoteByIdResponse): QuoteResponse {
+    const finalAmt =
+      typeof data.finalAmount === 'string' ? parseInt(data.finalAmount, 10) : data.finalAmount;
+    const initalAmt =
+      typeof data.initialAmount === 'string' ? parseInt(data.finalAmount, 10) : data.initialAmount;
+
+    const txCost = TRANSACTION_COST_USD * data.exchangeRate;
+    const total = initalAmt + txCost;
+
     return {
       quoteId: data.id,
-      initialCurrency: data.initialCurrency,
-      finalAmount: parseInt(data.finalAmount, 10),
+      initialAmount: initalAmt,
+      finalAmount: finalAmt,
       transactionCost: TRANSACTION_COST_USD * data.exchangeRate,
-      finalCurrency: data.finalCurrency,
       exchangeRate: data.exchangeRate,
       expiresAt: data.expiresAt,
+      totalCost: total,
     };
   }
 
-  static toPayment(data: SupraPaymentCreateResponse): Payment {
+  static toPayment(data: SupraPaymentCreateResponse): CreatePaymentResponse {
     return {
       userId: data.userId,
       paymentId: data.id,
       paymentLink: data.paymentLink,
-      status: data.status,
+      status: data.status as PaymentStatus,
       quoteId: data.quoteId,
     };
   }
 
-  static toPaymentStatus(data: SupraPaymentStatusResponse): PaymentStatus {
+  static toPaymentStatus(data: SupraPaymentStatusResponse): PaymentStatusResponse {
     return {
       paymentId: data.id,
-      status: data.status,
+      status: data.status as PaymentStatus,
       amount: data.amount,
       currency: data.currency,
       fullName: data.fullName,
@@ -59,7 +74,7 @@ export class SupraMapper {
     };
   }
 
-  static toBalances(data: SupraBalanceResponse): Balances {
+  static toBalances(data: SupraBalanceResponse): AppBalance {
     const findAmount = (currency: string): number => {
       const item = data.find((b) => b.currency.toLowerCase() == currency);
       return item?.amount ?? 0;
