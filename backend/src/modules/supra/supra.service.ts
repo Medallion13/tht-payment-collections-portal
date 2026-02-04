@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AppBalance,
-  CreatePaymentRequest,
+  type CreatePaymentRequest,
   CreatePaymentResponse,
   PaymentStatusResponse,
   QuoteResponse,
@@ -11,6 +11,7 @@ import {
 import { randomUUID } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 
+import { LogOperation } from '../../common/decorators/log-operation.decorator';
 import {
   AuthSuccess,
   SupraBalanceResponse,
@@ -45,10 +46,8 @@ export class SupraService {
     return this.configService.getOrThrow<string>('supra.secret');
   }
 
+  @LogOperation({ name: 'getToken', logOutput: false })
   private async getToken(): Promise<string> {
-    const startTime = Date.now();
-    let error: Error | null = null;
-
     try {
       const response = await firstValueFrom(
         this.httpService.post<AuthSuccess>(
@@ -65,29 +64,17 @@ export class SupraService {
 
       return response.data.token;
     } catch (e) {
-      error = handleSupraError(e);
-      throw error;
-    } finally {
-      this.logger.log({
-        operation: 'getToken',
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
+      throw handleSupraError(e);
     }
   }
 
   /**
    * Get exchange rate quote
    */
+  @LogOperation({ name: 'getQuote' })
   async getQuote(amount: number): Promise<QuoteResponse> {
-    const startTime = Date.now();
-    let error: Error | null = null;
-    let result: QuoteResponse | null = null;
-
     try {
       const token = await this.getToken();
-      const amountForApi = amount;
 
       const response = await firstValueFrom(
         this.httpService.post<SupraQuoteResponse>(
@@ -95,7 +82,7 @@ export class SupraService {
           {
             initialCurrency: 'USD',
             finalCurrency: 'COP',
-            initialAmount: amountForApi,
+            initialAmount: amount,
             customExpirationTime: 60,
           },
           {
@@ -104,32 +91,17 @@ export class SupraService {
         ),
       );
 
-      result = SupraMapper.toQuote(response.data);
-
-      return result;
+      return SupraMapper.toQuote(response.data);
     } catch (e) {
-      error = handleSupraError(e);
-      throw error;
-    } finally {
-      this.logger.log({
-        operation: 'getSupraQuote',
-        input: { amount },
-        output: result ? { quoteId: result.quoteId, finalAmount: result.finalAmount } : null,
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
+      throw handleSupraError(e);
     }
   }
 
   /**
    * Get the Quote by ID for validation before creating the payment
    */
+  @LogOperation({ name: 'getQuoteById' })
   async getQuoteById(quoteId: string): Promise<QuoteResponse> {
-    const startTime = Date.now();
-    let result: QuoteResponse | null = null;
-    let error: Error | null = null;
-
     try {
       const token = await this.getToken();
 
@@ -144,41 +116,20 @@ export class SupraService {
           },
         ),
       );
-      result = SupraMapper.toQuoteFromById(response.data);
-      return result;
+      return SupraMapper.toQuoteFromById(response.data);
     } catch (e) {
-      error = handleSupraError(e);
-
-      throw error;
-    } finally {
-      this.logger.log('get_quote_by_id', {
-        operation: 'getQuoteById',
-        input: { quoteId },
-        output: result
-          ? {
-              exists: true,
-              finalAmount: result.finalAmount,
-              expiresAt: result.expiresAt,
-            }
-          : null,
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
+      throw handleSupraError(e);
     }
   }
 
   /**
    * Create the payment
    */
+  @LogOperation({ name: 'createPayment' })
   async createPayment(
     paymentData: CreatePaymentRequest,
     totalCost: number,
   ): Promise<CreatePaymentResponse> {
-    const startTime = Date.now();
-    let result: CreatePaymentResponse | null = null;
-    let error: Error | null = null;
-
     try {
       const token = await this.getToken();
 
@@ -210,36 +161,16 @@ export class SupraService {
         ),
       );
 
-      result = SupraMapper.toPayment(response.data);
-
-      return result;
+      return SupraMapper.toPayment(response.data);
     } catch (e) {
-      error = handleSupraError(e);
-      throw error;
-    } finally {
-      this.logger.log('create_payment', {
-        operation: `createPayment`,
-        input: {
-          quoteId: paymentData.quoteId,
-          email: paymentData.email,
-          amount: totalCost,
-        },
-        output: result
-          ? {
-              paymentId: result.paymentId,
-              status: result.status,
-            }
-          : null,
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
+      throw handleSupraError(e);
     }
   }
 
   /**
    * Get the payment by id
    */
+  @LogOperation({ name: 'getPaymentStatus' })
   async getPaymentStatus(paymentId: string): Promise<PaymentStatusResponse> {
     const startTime = Date.now();
     let error: Error | null = null;
@@ -280,11 +211,8 @@ export class SupraService {
     }
   }
 
+  @LogOperation({ name: 'getBalance' })
   async getBalance(): Promise<AppBalance> {
-    const startTime = Date.now();
-    let error: Error | null = null;
-    let result: AppBalance | null = null;
-
     try {
       const token = await this.getToken();
 
@@ -297,22 +225,12 @@ export class SupraService {
       const data = response.data;
 
       if (Array.isArray(data)) {
-        result = SupraMapper.toBalances(data);
-        return result;
+        return SupraMapper.toBalances(data);
       }
 
       throw new Error(`Error getting balances: ${JSON.stringify(data)}`);
     } catch (e) {
-      error = handleSupraError(e);
-      throw e;
-    } finally {
-      this.logger.log({
-        operation: 'getPaymentStatus',
-
-        duration_ms: Date.now() - startTime,
-        status: error ? 'error' : 'success',
-        error: error ? { message: error.message } : null,
-      });
+      throw handleSupraError(e);
     }
   }
 }
