@@ -1,0 +1,17 @@
+{
+  "name": "@tht/shared",
+  "version": "1.0.0",
+  "description": "Shared types for the monorepo",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
