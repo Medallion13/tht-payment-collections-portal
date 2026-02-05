@@ -1,13 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppBalance } from '@tht/shared';
 import { firstValueFrom } from 'rxjs';
 
 import { LogOperation } from '../../common/decorators/log-operation.decorator';
-import { AuthSuccess, SupraBalanceResponse } from './interface/supra.interfaces';
+import { AuthSuccess } from './interface/supra.interfaces';
 import { handleSupraError } from './supra.errors';
-import { SupraMapper } from './supra.mapper';
 
 @Injectable()
 export class SupraService {
@@ -54,26 +52,26 @@ export class SupraService {
     }
   }
 
-  @LogOperation({ name: 'getBalance' })
-  async getBalance(): Promise<AppBalance> {
-    try {
-      const token = await this.getToken();
+  // @LogOperation({ name: 'getBalance' })
+  // async getBalance(): Promise<AppBalance> {
+  //   try {
+  //     const token = await this.getToken();
 
-      const response = await firstValueFrom(
-        this.httpService.get<SupraBalanceResponse>(`${this.apiUrl}/v1/payout/user/balances`, {
-          headers: { Authorization: `Bearer ${token}`, 'X-API-TYPE': 'public' },
-        }),
-      );
+  //     const response = await firstValueFrom(
+  //       this.httpService.get<SupraBalanceResponse>(`${this.apiUrl}/v1/payout/user/balances`, {
+  //         headers: { Authorization: `Bearer ${token}`, 'X-API-TYPE': 'public' },
+  //       }),
+  //     );
 
-      const data = response.data;
+  //     const data = response.data;
 
-      if (Array.isArray(data)) {
-        return SupraMapper.toBalances(data);
-      }
+  //     if (Array.isArray(data)) {
+  //       return SupraMapper.toBalances(data);
+  //     }
 
-      throw new Error(`Error getting balances: ${JSON.stringify(data)}`);
-    } catch (e) {
-      throw handleSupraError(e);
-    }
-  }
+  //     throw new Error(`Error getting balances: ${JSON.stringify(data)}`);
+  //   } catch (e) {
+  //     throw handleSupraError(e);
+  //   }
+  // }
 }
