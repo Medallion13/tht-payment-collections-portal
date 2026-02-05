@@ -35,10 +35,10 @@ export class Order implements IOrder {
   @Column('int')
   quantity: number;
 
-  @Column({ name: 'total_amount_usd', type: 'decimal', precision: 10, scale: 2 })
+  @Column({ name: 'total_amount_usd', type: 'int' }) // factor 100
   totalAmountUsd: number;
 
-  @Column({ name: 'total_amount_cop', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'total_amount_cop', type: 'int' })
   totalAmountCop: number; // final price quote
 
   @Column({ name: 'exchange_rate', type: 'decimal', precision: 10, scale: 2 })

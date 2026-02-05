@@ -12,7 +12,7 @@ export class Product implements IProduct {
   @Column()
   description: string;
 
-  @Column({ name: 'price_usd', type: 'decimal', precision: 10, scale: 2 }) // factor 100 definition
+  @Column({ name: 'price_usd', type: 'int' }) // factor 100 definition
   priceUsd: number;
 
   @Column()
