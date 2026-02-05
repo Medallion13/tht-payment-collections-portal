@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     container_name: tht-postgres
     env_file: ./backend/.env
     environment:
