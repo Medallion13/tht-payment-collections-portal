@@ -1,7 +1,8 @@
+import { IProduct } from '@tht/shared';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('products') // table name
-export class Product {
+export class Product implements IProduct {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -12,7 +13,7 @@ export class Product {
   description: string;
 
   @Column({ name: 'price_usd', type: 'decimal', precision: 10, scale: 2 }) // factor 100 definition
-  price_usd: number;
+  priceUsd: number;
 
   @Column()
   category: string;

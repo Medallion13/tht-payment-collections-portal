@@ -10,7 +10,7 @@ export enum OrderStatus {
 export interface IOrder {
   id: string;
   user?: IUser;
-  ProductId: string;
+  productId: string;
   product?: IProduct;
 
   quantity: number;

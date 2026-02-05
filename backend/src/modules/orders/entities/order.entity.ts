@@ -1,3 +1,4 @@
+import { IOrder, OrderStatus } from '@tht/shared';
 import {
   Column,
   CreateDateColumn,
@@ -11,12 +12,12 @@ import { Product } from '../../products/entities/product.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('orders') // table name
-export class Order {
+export class Order implements IOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // related columns
-  @Column({ name: 'user_id ' })
+  @Column({ name: 'user_id' })
   userId: string;
 
   @ManyToOne(() => User, (user) => user.orders)
@@ -44,14 +45,14 @@ export class Order {
   exchangeRate: number; // fee
 
   // Audit
-  @Column({ default: 'PENDING' })
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  status: OrderStatus;
 
   @Column({ name: 'transaction_id', nullable: true })
   transactionId: string; //supra transacton ID
 
   @CreateDateColumn({ name: 'created_at' })
-  createAt: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
