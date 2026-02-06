@@ -37,10 +37,12 @@ export class SupraMapper {
     const finalAmt =
       typeof data.finalAmount === 'string' ? parseInt(data.finalAmount, 10) : data.finalAmount;
     const initalAmt =
-      typeof data.initialAmount === 'string' ? parseInt(data.finalAmount, 10) : data.initialAmount;
+      typeof data.initialAmount === 'string'
+        ? parseInt(data.initialAmount, 10)
+        : data.initialAmount;
 
     const txCost = TRANSACTION_COST_USD * data.exchangeRate;
-    const total = initalAmt + txCost;
+    const total = finalAmt + txCost;
 
     return {
       orderId: orderId,

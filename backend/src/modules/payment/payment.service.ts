@@ -79,9 +79,10 @@ export class PaymentService {
       throw new BadRequestException(`Order ${dto.orderId} is already ${order.status}`);
     }
 
-    // Integrity validation
     if (dto.amount !== order.totalAmountUsd) {
-      throw new BadRequestException(`The requested amount does not match the order total `);
+      throw new BadRequestException(
+        `The requested amount does not match the order total ${dto.amount} !== ${order.totalAmountUsd}`,
+      );
     }
 
     const supraQuote = await this.supraQuote.getQuote(order.totalAmountUsd);
