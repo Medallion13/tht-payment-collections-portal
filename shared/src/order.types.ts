@@ -15,8 +15,8 @@ export interface IOrder {
 
   quantity: number;
   totalAmountUsd: number;
-  totalAmountCop: number;
-  exchangeRate: number;
+  totalAmountCop: number | null;
+  exchangeRate: number | null;
 
   status: OrderStatus;
   transactionId: string | null;

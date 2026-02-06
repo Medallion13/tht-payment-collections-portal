@@ -38,11 +38,11 @@ export class Order implements IOrder {
   @Column({ name: 'total_amount_usd', type: 'int' }) // factor 100
   totalAmountUsd: number;
 
-  @Column({ name: 'total_amount_cop', type: 'int' })
-  totalAmountCop: number; // final price quote
+  @Column({ name: 'total_amount_cop', type: 'int', nullable: true })
+  totalAmountCop: number | null; // final price quote
 
-  @Column({ name: 'exchange_rate', type: 'decimal', precision: 10, scale: 2 })
-  exchangeRate: number; // fee
+  @Column({ name: 'exchange_rate', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  exchangeRate: number | null; // fee
 
   // Audit
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })

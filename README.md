@@ -77,122 +77,141 @@ Entry point: `http://localhost:5173/quote?amount=349`
 
 ```mermaid
 sequenceDiagram
-    participant ES as External System<br/>(Amazon)
+    participant HP as HomePage<br/>(Store Frontend)
     participant QP as QuotePage<br/>(Frontend)
     participant CP as ConfirmationPage<br/>(Frontend)
     participant BE as Backend<br/>(NestJS)
+    participant DB as Database<br/>(Postgres)
     participant SA as Supra API
     participant SEP as Supra External<br/>Payment Page
 
-    Note over ES,SEP: FASE 1: QUOTE (Cotización USD → COP)
+    Note over HP,SEP: FASE 0: ORDER INTENTION & BALANCE CHECK (NUEVO)
 
-    ES->>QP: Redirect: ?amount=349
-    activate QP
-    QP->>QP: Read ?amount from URL
-    QP->>QP: Display: "Pay $349.00 USD"
-    QP->>QP: User clicks "Get Quote"
-
-    QP->>BE: POST /api/payment/quote<br/>{amount: 34900}
+    HP->>HP: Select Product & User
+    HP->>BE: POST /orders<br/>{userId, productId, qty}
     activate BE
 
-    BE->>SA: POST /v1/auth/token
+    BE->>DB: Find User & Product
+    BE->>DB: SAVE Order (Status: DRAFT/PENDING)
+    activate DB
+    DB-->>BE: Order Entity (ID: 123)
+    deactivate DB
+
+    BE->>SA: GET /v1/payout/user/balances<br/>(Check Funds)
     activate SA
-    SA-->>BE: {token}
+    SA-->>BE: {available: 50000} (COP)
     deactivate SA
 
-    BE->>SA: POST /v1/exchange/quote<br/>{initialCurrency: USD,<br/>finalCurrency: COP,<br/>initialAmount: 34900}
-    activate SA
-    SA-->>BE: {quoteId, exchangeRate,<br/>finalAmount, expiresAt}
-    deactivate SA
+    alt 💰 Sufficient Balance (RICH USER)
+        BE->>DB: UPDATE Order (Status: COMPLETED,<br/>Snapshot Prices)
+        activate DB
+        DB-->>BE: Updated Order
+        deactivate DB
+        BE-->>HP: {status: COMPLETED, order: {...}}
+        HP->>HP: Show Success Message (Skip Payment)
 
-    BE-->>QP: {quoteId, finalAmount,<br/>transactionCost, totalCost,<br/>exchangeRate, expiresAt}
-    deactivate BE
+    else 💸 Insufficient Balance (POOR USER)
+        BE-->>HP: {status: PENDING, requiresPayment: true,<br/>shortfall: 34900, redirectUrl: /quote?orderId=123}
+        deactivate BE
 
-    QP->>QP: Display quote + 45s timer
-    QP->>QP: User fills form:<br/>fullName, documentType,<br/>document, email, cellPhone
+        HP->>QP: Redirect with ?orderId=123
 
-    Note over ES,SEP: FASE 2: PAYMENT CREATION
+        Note over HP,SEP: FASE 1: QUOTE (Cotización USD → COP) (EXISTENTE)
 
-    QP->>QP: User clicks "Proceed to Payment"
+        activate QP
+        QP->>BE: POST /api/payment/quote<br/>{amount: 34900, orderId: 123}
+        activate BE
 
-    QP->>BE: POST /api/payment/process<br/>{quoteId, fullName,<br/>documentType, document,<br/>email, cellPhone}
-    activate BE
+        BE->>SA: POST /v1/auth/token
+        activate SA
+        SA-->>BE: {token}
+        deactivate SA
 
-    BE->>SA: POST /v1/auth/token
-    activate SA
-    SA-->>BE: {token}
-    deactivate SA
+        BE->>SA: POST /v1/exchange/quote<br/>{initialCurrency: USD, finalCurrency: COP,<br/>initialAmount: 34900}
+        activate SA
+        SA-->>BE: {quoteId, exchangeRate,<br/>finalAmount, expiresAt}
+        deactivate SA
 
-    BE->>SA: GET /v1/exchange/quote/:id<br/>(validate quote)
-    activate SA
-    SA-->>BE: {quote details}
-    deactivate SA
+        BE-->>QP: {quoteId, finalAmount, exchangeRate...}
+        deactivate BE
 
-    BE->>SA: POST /v1/auth/token
-    activate SA
-    SA-->>BE: {token}
-    deactivate SA
+        QP->>QP: Display quote + 45s timer
+        QP->>QP: User fills form (UserData)
 
-    BE->>SA: POST /v1/payin/payment<br/>{currency: COP, amount,<br/>quoteId, userData,<br/>redirectUrl}
-    activate SA
-    SA-->>BE: {paymentId, paymentLink,<br/>status: CREATED}
-    deactivate SA
+        Note over HP,SEP: FASE 2: PAYMENT CREATION (EXISTENTE)
 
-    BE-->>QP: {paymentId, paymentLink,<br/>status}
-    deactivate BE
+        QP->>QP: User clicks "Proceed to Payment"
 
-    QP->>QP: localStorage.setItem(<br/>'pendingPaymentId', paymentId)
-    QP->>SEP: window.location.href = paymentLink
-    deactivate QP
+        QP->>BE: POST /api/payment/process<br/>{quoteId, userData, orderId: 123}
+        activate BE
 
-    Note over ES,SEP: FASE 3: EXTERNAL PAYMENT
+        BE->>SA: POST /v1/auth/token
+        activate SA
+        SA-->>BE: {token}
+        deactivate SA
 
-    activate SEP
-    SEP->>SEP: User completes payment<br/>on Supra's interface
-    SEP->>CP: Redirect to:<br/>localhost:5173/confirmation
-    deactivate SEP
+        BE->>SA: GET /v1/exchange/quote/:id<br/>(validate quote)
+        activate SA
+        SA-->>BE: {quote details}
+        deactivate SA
 
-    Note over ES,SEP: FASE 4: CONFIRMATION
+        BE->>SA: POST /v1/auth/token
+        activate SA
+        SA-->>BE: {token}
+        deactivate SA
 
-    activate CP
-    CP->>CP: paymentId = localStorage.getItem(<br/>'pendingPaymentId')
+        BE->>SA: POST /v1/payin/payment<br/>{currency: COP, amount, quoteId...}
+        activate SA
+        SA-->>BE: {paymentId, paymentLink, status: CREATED}
+        deactivate SA
 
-    alt No paymentId found
-        CP->>CP: Show error
+        BE-->>QP: {paymentId, paymentLink, status}
+        deactivate BE
+
+        QP->>QP: localStorage.setItem('pendingPaymentId', paymentId)
+        QP->>QP: localStorage.setItem('pendingOrderId', 123)
+        QP->>SEP: window.location.href = paymentLink
+        deactivate QP
+
+        Note over HP,SEP: FASE 3: EXTERNAL PAYMENT (EXISTENTE)
+
+        activate SEP
+        SEP->>SEP: User completes payment
+        SEP->>CP: Redirect to localhost:5173/confirmation
+        deactivate SEP
+
+        Note over HP,SEP: FASE 4: CONFIRMATION & ORDER UPDATE (MEJORADO)
+
+        activate CP
+        CP->>CP: Retrieve paymentId & orderId
+
+        CP->>BE: GET /api/payment/status/:paymentId
+        activate BE
+        BE->>SA: Check Payment Status...
+        activate SA
+        SA-->>BE: {status: PAID, amount...}
+        deactivate SA
+
+        opt IF STATUS === PAID
+             BE->>DB: UPDATE Order (ID: 123)<br/>Set Status: COMPLETED<br/>Save Snapshot (Rate/Total)
+             activate DB
+             DB-->>BE: Success
+             deactivate DB
+        end
+
+        BE-->>CP: {paymentStatus: PAID, orderStatus: COMPLETED}
+        deactivate BE
+
+        CP->>BE: GET /api/payment/balances (Refresh UI)
+        activate BE
+        BE->>SA: Get Balances...
+        SA-->>BE: Balances
+        BE-->>CP: {usd, cop}
+        deactivate BE
+
+        CP->>CP: Show Final Success
+        deactivate CP
     end
-
-    CP->>BE: GET /api/payment/status/:paymentId
-    activate BE
-    BE->>SA: POST /v1/auth/token
-    activate SA
-    SA-->>BE: {token}
-    deactivate SA
-    BE->>SA: GET /v1/payin/payment/:id
-    activate SA
-    SA-->>BE: {status, amount, ...}
-    deactivate SA
-    BE-->>CP: {paymentId, status,<br/>amount, currency, ...}
-    deactivate BE
-
-    CP->>BE: GET /api/payment/balances
-    activate BE
-    BE->>SA: POST /v1/auth/token
-    activate SA
-    SA-->>BE: {token}
-    deactivate SA
-    BE->>SA: GET /v1/payout/user/balances
-    activate SA
-    SA-->>BE: [{currency, amount}, ...]
-    deactivate SA
-    BE-->>CP: {usd, cop}
-    deactivate BE
-
-    alt status === PAID
-        CP->>CP: Show success<br/>localStorage.removeItem
-    else status === PENDING/EXPIRED
-        CP->>CP: Show status message
-    end
-    deactivate CP
 ```
 
 ## Key Technical Decisions
