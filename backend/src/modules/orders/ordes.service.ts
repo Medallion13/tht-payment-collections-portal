@@ -91,6 +91,7 @@ export class OrdersService {
     return this.orderRepository.save(order);
   }
 
+  @LogOperation({ name: 'finalize_order_external' })
   async finalizeOrderExternal(
     orderId: string,
     transactionId: string,
@@ -107,5 +108,13 @@ export class OrdersService {
     order.updatedAt = new Date();
 
     return this.orderRepository.save(order);
+  }
+
+  @LogOperation({ name: 'find_order_by_id' })
+  async findOrderById(id: string): Promise<Order | null> {
+    return this.orderRepository.findOne({
+      where: { id },
+      relations: ['product'], // to price validation
+    });
   }
 }

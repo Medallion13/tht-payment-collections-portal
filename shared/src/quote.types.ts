@@ -8,6 +8,7 @@ export interface QuoteRequest {
 }
 
 export interface QuoteResponse {
+  orderId: string;
   quoteId: string;
   initialAmount: number; // factor 100
   finalAmount: number; //factor 100

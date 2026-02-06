@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
+import { OrderStatus } from '@tht/shared';
 import { LogOperation } from '../../common/decorators/log-operation.decorator';
+import { OrdersService } from '../orders/ordes.service';
 import { SupraBalanceService } from '../supra/services/supra-balance.service';
 import { SupraPaymentService } from '../supra/services/supra-payment.service';
 import { SupraQuoteService } from '../supra/services/supra-quote.service';
@@ -17,6 +19,7 @@ export class PaymentService {
     private readonly supraQuote: SupraQuoteService,
     private readonly supraPayment: SupraPaymentService,
     private readonly supraBalance: SupraBalanceService,
+    private readonly ordersService: OrdersService,
   ) {}
 
   @LogOperation({ name: 'validateQuote' })
@@ -51,9 +54,23 @@ export class PaymentService {
 
   @LogOperation({ name: 'getQuote' })
   async getQuote(dto: QuoteRequestDto): Promise<QuoteResponseDto> {
-    const supraQuote = await this.supraQuote.getQuote(dto.amount);
+    const order = await this.ordersService.findOrderById(dto.orderId);
+
+    if (!order) throw new NotFoundException(`Order with the ID ${dto.orderId} not found`);
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(`Order ${dto.orderId} is already ${order.status}`);
+    }
+
+    // Integrity validation
+    if (dto.amount !== order.totalAmountUsd) {
+      throw new BadRequestException(`The requested amount does not match the order total `);
+    }
+
+    const supraQuote = await this.supraQuote.getQuote(order.totalAmountUsd);
 
     return {
+      orderId: order.id,
       quoteId: supraQuote.quoteId,
       initialAmount: dto.amount,
       finalAmount: supraQuote.finalAmount,

@@ -17,6 +17,7 @@ export class QuoteRequestDto implements QuoteRequest {
   amount: number;
 }
 export class QuoteResponseDto implements QuoteResponse {
+  orderId: string;
   quoteId: string;
   initialAmount: number; // factor 100
   finalAmount: number; // factor 100
