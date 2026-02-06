@@ -1,7 +1,7 @@
 import { Body, Controller, Headers, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { LogOperation } from '../../common/decorators/log-operation.decorator';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrdersService } from './ordes.service';
+import { OrdersService } from './orders.service';
 
 @Controller('orders')
 export class OrdersController {

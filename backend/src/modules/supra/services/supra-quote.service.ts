@@ -31,14 +31,14 @@ export class SupraQuoteService {
   }
 
   @LogOperation({ name: 'getQuoteById' })
-  async getQuoteById(quoteId: string): Promise<QuoteResponse> {
+  async getQuoteById(quoteId: string, orderId: string): Promise<QuoteResponse> {
     try {
       const data = await this.client.authenticatedRequest<SupraQuoteByIdResponse>(
         'GET',
         `/v1/exchange/quote/${quoteId}`,
       );
 
-      return SupraMapper.toQuoteFromById(data);
+      return SupraMapper.toQuoteFromById(data, orderId);
     } catch (e) {
       throw handleSupraError(e);
     }
