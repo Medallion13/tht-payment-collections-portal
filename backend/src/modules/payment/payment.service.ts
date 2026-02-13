@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 
 import { OrderStatus } from '@tht/shared';
 import { LogOperation } from '../../common/decorators/log-operation.decorator';
-import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SupraBalanceService } from '../supra/services/supra-balance.service';
 import { SupraPaymentService } from '../supra/services/supra-payment.service';
@@ -167,26 +166,6 @@ export class PaymentService {
       fullName: status.fullName,
       status: status.status,
     };
-  }
-
-  @LogOperation({ name: 'verifyAndFinalizeOrder' })
-  async verifyAndFinalizeOrder(paymentId: string, orderId: string): Promise<Order> {
-    const supraStatus = await this.supraPayment.getPaymentStatus(paymentId);
-    const order = await this.ordersService.findOrderById(orderId);
-    if (!order) throw new NotFoundException('Order Not Found');
-
-    const rate = order.exchangeRate ? order.exchangeRate : 0;
-
-    if (supraStatus.status === 'COMPLETED') {
-      return this.ordersService.finalizeOrderExternal(
-        order.id,
-        paymentId,
-        supraStatus.amount,
-        rate,
-      );
-    }
-
-    return order;
   }
 
   @LogOperation({ name: 'getBalances' })

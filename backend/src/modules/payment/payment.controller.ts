@@ -32,11 +32,6 @@ export class PaymentController {
     }
   }
 
-  @Post('verify/:paymentId/:orderId')
-  async verify(@Param('paymentId') paymentId: string, @Param('orderId') orderId: string) {
-    return this.paymentService.verifyAndFinalizeOrder(paymentId, orderId);
-  }
-
   @Get('balances')
   async getBalances(): Promise<BalancesResponseDto> {
     return this.paymentService.getBalances();

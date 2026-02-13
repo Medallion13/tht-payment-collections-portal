@@ -31,4 +31,11 @@ export class OrdersController {
     const balanceValue = mockBalance ? parseFloat(mockBalance) : undefined;
     return this.orderService.processPaymentAttempt(id, balanceValue);
   }
+
+  // finalize the order
+  @Post(':orderId/finalize')
+  @LogOperation({ name: 'finalize_order_endpoint' })
+  async finalizeOrder(@Param('orderId', ParseUUIDPipe) orderId: string) {
+    return this.orderService.finalizeOrder(orderId);
+  }
 }

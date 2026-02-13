@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderStatus } from '@tht/shared';
 import { randomUUID } from 'node:crypto';
@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { LogOperation } from '../../common/decorators/log-operation.decorator';
 import { Product } from '../products/entities/product.entity';
 import { SupraBalanceService } from '../supra/services/supra-balance.service';
+import { SupraPaymentService } from '../supra/services/supra-payment.service';
 import { User } from '../users/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order } from './entities/order.entity';
@@ -23,6 +24,8 @@ export class OrdersService {
     private readonly productRepository: Repository<Product>,
 
     private readonly supraBalanceService: SupraBalanceService,
+
+    private readonly supraPaymentService: SupraPaymentService,
   ) {}
 
   @LogOperation({ name: 'initialize_order' })
@@ -135,5 +138,27 @@ export class OrdersService {
       where: { id },
       relations: ['product'], // to price validation
     });
+  }
+
+  @LogOperation({ name: 'finalize_order ' })
+  async finalizeOrder(orderId: string): Promise<Order> {
+    const order = await this.findOrderById(orderId);
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Check if order have the transaction id
+    if (!order.transactionId) {
+      throw new BadRequestException('Order has no associeted payment');
+    }
+
+    // Get supra status
+    const supraStatus = await this.supraPaymentService.getPaymentStatus(order.transactionId);
+    const totalCost = supraStatus.amount * 100; // to keep the factor 100 in the database
+
+    if (supraStatus.status == 'PAID') {
+      const rate = order.exchangeRate ?? 0;
+      return this.finalizeOrderExternal(order.id, order.transactionId, totalCost, rate);
+    }
+
+    return order;
   }
 }
