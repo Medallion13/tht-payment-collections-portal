@@ -152,7 +152,7 @@ export class OrdersService {
 
     // Get supra status
     const supraStatus = await this.supraPaymentService.getPaymentStatus(order.transactionId);
-    const totalCost = supraStatus.amount * 100; // to keep the factor 100 in the database
+    const totalCost = Math.trunc(supraStatus.amount * 100); // to keep the factor 100 in the database
 
     if (supraStatus.status == 'PAID') {
       const rate = order.exchangeRate ?? 0;

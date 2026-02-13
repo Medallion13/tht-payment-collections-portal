@@ -35,7 +35,7 @@ export class SupraPaymentService {
         document: paymentData.document,
         fullName: paymentData.fullName,
         description: 'Collection Payment',
-        redirectUrl: 'http://localhost:5173/confirmation',
+        redirectUrl: `http://localhost:5173/confirmation?orderId=${paymentData.orderId}`,
         quoteId: paymentData.quoteId,
       };
 
